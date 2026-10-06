@@ -1,0 +1,8 @@
+<?php
+session_start();
+if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+    header('Location: /TheKingdomMinistry 2/admin/dashboard.php');
+} else {
+    header('Location: /TheKingdomMinistry 2/admin/login.php');
+}
+exit;

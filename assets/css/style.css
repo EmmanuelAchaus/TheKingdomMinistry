@@ -1,0 +1,168 @@
+:root {
+  --sacred-navy: #1b2b41;
+  --sacred-parchment: #fdfcf7;
+  --sacred-gold: #b89c5e;
+}
+
+body, h1, h2, h3, h4, h5, h6, .prose, .prose * {
+  font-family: 'Newsreader', serif !important;
+}
+
+body {
+  background-color: var(--sacred-parchment);
+  color: var(--sacred-navy);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 2.5rem !important; }
+  h2 { font-size: 1.8rem !important; }
+  h3 { font-size: 1.5rem !important; }
+  .article-container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+.spiritual-quote {
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+.elegant-border {
+  border-bottom: 1px solid rgba(184, 156, 94, 0.3);
+}
+
+.fade-in {
+  animation: fadeIn 1.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hover-gold:hover {
+  color: var(--sacred-gold);
+  transition: color 0.3s ease;
+}
+
+/* Article Archive Styles */
+.article-card:hover .article-title {
+  color: var(--sacred-gold);
+  transition: color 0.3s ease;
+}
+
+/* Custom focus styles for search */
+.search-input:focus {
+  border-color: var(--sacred-gold) !important;
+  outline: none;
+}
+
+.rounded-custom {
+  border-radius: 4px;
+}
+
+/* Article Detail Styles */
+.article-container {
+  max-width: 720px;
+}
+
+/* Paragraph spacing for article body — ensures all articles match the same reading rhythm */
+.prose p {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+  line-height: 1.9;
+}
+
+.prose p:first-of-type {
+  margin-top: 0;
+}
+
+.dropcap::first-letter,
+.prose > p:first-of-type::first-letter {
+  float: left;
+  font-size: 5.5rem;
+  line-height: 0.8;
+  padding-top: 0.2em;
+  padding-right: 0.1em;
+  padding-left: 0.05em;
+  color: var(--sacred-gold);
+}
+
+/* Custom selection color */
+::selection {
+  background: var(--sacred-gold);
+  color: var(--sacred-parchment);
+}
+
+.accent-border {
+  border-color: var(--sacred-gold);
+}
+
+.prose-sacred-navy {
+  color: var(--sacred-navy);
+}
+
+/* Background Utility */
+.bg-parchment {
+  background-color: var(--sacred-parchment);
+}
+
+.bg-sacred-navy {
+  background-color: var(--sacred-navy);
+}
+
+.text-sacred-gold {
+  color: var(--sacred-gold);
+}
+
+.border-sacred-gold {
+  border-color: var(--sacred-gold);
+}
+
+/* Carousel and Scrollbar Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  overflow: -moz-scrollbars-none !important;
+}
+
+#category-carousel {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+#scroll-left, #scroll-right {
+  z-index: 50 !important;
+  cursor: pointer;
+}
+
+#scroll-left:hover, #scroll-right:hover {
+  color: var(--sacred-gold);
+}
+
+#main-nav {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 101 !important;
+  transition: top 0.4s ease-in-out, opacity 0.4s ease-in-out !important;
+}
+
+#main-nav.nav-hidden {
+  top: -200px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+
