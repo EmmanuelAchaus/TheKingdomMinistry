@@ -7,7 +7,7 @@ $articles = $pdo->query("SELECT a.*, c.name as category_name FROM articles a LEF
 
 <div class="mb-8 flex justify-between items-center">
     <h1 class="text-3xl font-semibold mb-2">Articles</h1>
-    <a href="/TheKingdomMinistry 2/admin/articles/create.php" class="btn-primary flex items-center gap-2">
+    <a href="<?php echo htmlspecialchars(app_url('admin/articles/create.php')); ?>" class="btn-primary flex items-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
         Create Article
     </a>
@@ -32,7 +32,7 @@ $articles = $pdo->query("SELECT a.*, c.name as category_name FROM articles a LEF
                         <tr class="hover:bg-gray-50 transition-colors" id="row-<?php echo $article['id']; ?>">
                             <td class="py-4 px-6">
                                 <?php if($article['image']): ?>
-                                    <img src="/TheKingdomMinistry 2/<?php echo htmlspecialchars($article['image']); ?>" alt="Img" class="w-16 h-12 object-cover rounded">
+                                    <img src="<?php echo htmlspecialchars(app_url($article['image'])); ?>" alt="Img" class="w-16 h-12 object-cover rounded">
                                 <?php else: ?>
                                     <div class="w-16 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">None</div>
                                 <?php endif; ?>
@@ -59,7 +59,7 @@ $articles = $pdo->query("SELECT a.*, c.name as category_name FROM articles a LEF
                             </td>
                             <td class="py-4 px-6 text-gray-500 text-sm"><?php echo date('M d, Y', strtotime($article['created_at'])); ?></td>
                             <td class="py-4 px-6 text-right space-x-2">
-                                <a href="/TheKingdomMinistry 2/admin/articles/edit.php?id=<?php echo $article['id']; ?>" class="text-[#b89c5e] hover:text-[#8a7242] transition-colors p-1" title="Edit">
+                                <a href="<?php echo htmlspecialchars(app_url('admin/articles/edit.php?id=' . $article['id'])); ?>" class="text-[#b89c5e] hover:text-[#8a7242] transition-colors p-1" title="Edit">
                                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                 </a>
                                 <button onclick="deleteArticle(<?php echo $article['id']; ?>)" class="text-red-500 hover:text-red-700 transition-colors p-1" title="Delete">
@@ -80,7 +80,7 @@ $articles = $pdo->query("SELECT a.*, c.name as category_name FROM articles a LEF
 
 <script>
 function deleteArticle(id) {
-    AdminApp.handleAjaxDelete('/TheKingdomMinistry 2/admin/ajax/articles.ajax.php', { action: 'delete', id: id }, function() {
+    AdminApp.handleAjaxDelete(<?php echo json_encode(app_url('admin/ajax/articles.ajax.php')); ?>, { action: 'delete', id: id }, function() {
         document.getElementById('row-' + id).remove();
     });
 }

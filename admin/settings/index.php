@@ -10,6 +10,7 @@ require_once '../includes/header.php';
     <h2 class="text-xl font-semibold mb-6 border-b border-[#b89c5e]/20 pb-4">Change Password</h2>
     
     <form id="changePasswordForm">
+        <?php echo csrf_field(); ?>
         <div class="space-y-6">
             <div>
                 <label for="current_password" class="block text-sm font-medium mb-2 uppercase tracking-wide text-[#b89c5e]">Current Password *</label>
@@ -18,13 +19,13 @@ require_once '../includes/header.php';
             
             <div>
                 <label for="new_password" class="block text-sm font-medium mb-2 uppercase tracking-wide text-[#b89c5e]">New Password *</label>
-                <input type="password" id="new_password" name="new_password" required minlength="6">
-                <p class="text-xs text-gray-500 mt-1">Password must be at least 6 characters long.</p>
+                <input type="password" id="new_password" name="new_password" required minlength="12">
+                <p class="text-xs text-gray-500 mt-1">Password must be at least 12 characters long.</p>
             </div>
             
             <div>
                 <label for="confirm_password" class="block text-sm font-medium mb-2 uppercase tracking-wide text-[#b89c5e]">Confirm New Password *</label>
-                <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
+                <input type="password" id="confirm_password" name="confirm_password" required minlength="12">
             </div>
             
             <button type="submit" class="btn-primary w-full md:w-auto mt-4 px-8">Update Password</button>
@@ -53,7 +54,7 @@ document.getElementById('changePasswordForm').addEventListener('submit', functio
         didOpen: () => { Swal.showLoading(); }
     });
     
-    fetch('/TheKingdomMinistry 2/admin/ajax/settings.ajax.php', {
+    fetch(<?php echo json_encode(app_url('admin/ajax/settings.ajax.php')); ?>, {
         method: 'POST',
         body: formData
     })

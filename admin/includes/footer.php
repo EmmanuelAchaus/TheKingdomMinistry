@@ -1,5 +1,5 @@
     </main>
-    <script src="/TheKingdomMinistry 2/admin/assets/js/admin.js"></script>
+    <script src="<?php echo htmlspecialchars(app_url('admin/assets/js/admin.js')); ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof tinymce !== 'undefined') {

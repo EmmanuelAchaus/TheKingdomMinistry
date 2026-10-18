@@ -19,17 +19,23 @@ CREATE TABLE IF NOT EXISTS `articles` (
   `title` VARCHAR(255) NOT NULL,
   `slug` VARCHAR(255) NOT NULL UNIQUE,
   `image` VARCHAR(255) DEFAULT NULL,
+  `excerpt` TEXT DEFAULT NULL,
   `body` LONGTEXT NOT NULL,
   `category_id` INT DEFAULT NULL,
   `status` ENUM('Draft','Published') DEFAULT 'Published',
+  `is_featured` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Insert a default admin user: username=admin, password=password
--- password has been hashed using bcrypt in PHP: password_hash('password', PASSWORD_DEFAULT);
-INSERT IGNORE INTO `admins` (`username`, `password`) VALUES ('admin', '$2y$10$w6z9T5bHk7TqM9U1y3A8uOa4jLzU7h3LzU7h3LzU7h3LzU7h3LzU'); 
--- NOTE: Please replace password in your live environment. This is just a placeholder.
--- Actual hash for 'password' is:
--- $2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
-UPDATE `admins` SET `password` = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' WHERE `username` = 'admin';
+CREATE TABLE IF NOT EXISTS `settings` (
+  `setting_key` VARCHAR(100) PRIMARY KEY,
+  `setting_value` TEXT NOT NULL,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO `settings` (`setting_key`, `setting_value`) VALUES
+('highlighted_verse', 'Be still, and know that I am God.'),
+('highlighted_details', 'Psalm 46:10');
+
+-- Chama administrators are created with scripts/seed_admin.php after migrations run.

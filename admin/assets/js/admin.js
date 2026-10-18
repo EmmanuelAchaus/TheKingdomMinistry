@@ -15,6 +15,8 @@ const AdminApp = {
                 for (const key in data) {
                     formData.append(key, data[key]);
                 }
+                const csrf = document.querySelector('meta[name="csrf-token"]');
+                if (csrf) formData.append('csrf_token', csrf.content);
 
                 fetch(url, {
                     method: 'POST',

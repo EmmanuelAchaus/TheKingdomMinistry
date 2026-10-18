@@ -27,6 +27,7 @@
             </a>
             <div class="hidden md:flex gap-10 text-xs uppercase tracking-[0.3em] opacity-70 font-medium">
                 <a class="hover:text-[#b89c5e] transition-colors" href="articles.php">All Articles</a>
+                <a class="hover:text-[#b89c5e] transition-colors" href="portal/login.php">Chama Portal</a>
             </div>
             <div class="md:hidden">
                 <button id="mobile-menu-button" class="p-2 hover:text-sacred-gold transition-colors" aria-label="Toggle Menu">
@@ -42,6 +43,7 @@
     <!-- BEGIN: Mobile Menu -->
     <div id="mobile-menu" class="hidden fixed left-0 right-0 z-[100] bg-parchment border-b border-[#b89c5e]/20 py-8 px-6 space-y-6 text-center shadow-md" style="top: 73px;">
         <a class="block text-xs uppercase tracking-[0.3em] opacity-70 hover:text-sacred-gold transition-colors font-medium" href="articles.php">All Articles</a>
+        <a class="block text-xs uppercase tracking-[0.3em] opacity-70 hover:text-sacred-gold transition-colors font-medium" href="portal/login.php">Chama Portal</a>
     </div>
     <!-- END: Mobile Menu -->
     <!-- END: Navigation -->

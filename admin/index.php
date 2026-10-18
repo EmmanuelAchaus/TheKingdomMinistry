@@ -1,8 +1,9 @@
 <?php
-session_start();
-if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    header('Location: /TheKingdomMinistry 2/admin/dashboard.php');
-} else {
-    header('Location: /TheKingdomMinistry 2/admin/login.php');
+
+require_once dirname(__DIR__) . '/includes/app.php';
+
+$user = current_user();
+if ($user && $user['role'] === 'admin' && $user['account_status'] === 'active') {
+    redirect('admin/chama/');
 }
-exit;
+redirect('portal/login.php');

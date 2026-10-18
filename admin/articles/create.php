@@ -7,7 +7,7 @@ $categories = $pdo->query("SELECT * FROM categories ORDER BY name ASC")->fetchAl
 
 <div class="mb-8 flex justify-between items-center">
     <h1 class="text-3xl font-semibold mb-2">Create Article</h1>
-    <a href="/TheKingdomMinistry 2/admin/articles/index.php" class="text-sm font-medium text-gray-600 hover:text-[#1b2b41] flex items-center gap-1 transition-colors">
+    <a href="<?php echo htmlspecialchars(app_url('admin/articles/')); ?>" class="text-sm font-medium text-gray-600 hover:text-[#1b2b41] flex items-center gap-1 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         Back to Articles
     </a>
@@ -15,6 +15,7 @@ $categories = $pdo->query("SELECT * FROM categories ORDER BY name ASC")->fetchAl
 
 <div class="bg-white rounded-2xl shadow-sm border border-[#b89c5e]/20 p-8 max-w-5xl mx-auto">
     <form id="createArticleForm" enctype="multipart/form-data">
+        <?php echo csrf_field(); ?>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div class="md:col-span-2 space-y-6">
                 <!-- Title -->
@@ -113,6 +114,7 @@ function handleFileImport(input) {
     
     const file = input.files[0];
     const formData = new FormData();
+    formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
     formData.append('import_file', file);
     
     Swal.fire({
@@ -122,7 +124,7 @@ function handleFileImport(input) {
         didOpen: () => { Swal.showLoading(); }
     });
     
-    fetch('/TheKingdomMinistry 2/admin/ajax/import.ajax.php', {
+    fetch(<?php echo json_encode(app_url('admin/ajax/import.ajax.php')); ?>, {
         method: 'POST',
         body: formData
     })
@@ -171,7 +173,7 @@ document.getElementById('createArticleForm').addEventListener('submit', function
         didOpen: () => { Swal.showLoading(); }
     });
 
-    fetch('/TheKingdomMinistry 2/admin/ajax/articles.ajax.php', {
+    fetch(<?php echo json_encode(app_url('admin/ajax/articles.ajax.php')); ?>, {
         method: 'POST',
         body: formData
     })
@@ -179,7 +181,7 @@ document.getElementById('createArticleForm').addEventListener('submit', function
     .then(data => {
         if(data.success) {
             Swal.fire('Success', 'Article has been created!', 'success').then(() => {
-                window.location.href = '/TheKingdomMinistry 2/admin/articles/index.php';
+                window.location.href = <?php echo json_encode(app_url('admin/articles/')); ?>;
             });
         } else {
             Swal.fire('Error', data.message || 'Error saving article', 'error');

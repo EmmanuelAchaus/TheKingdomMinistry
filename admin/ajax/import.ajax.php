@@ -1,14 +1,16 @@
 <?php
 ob_start();
-session_start();
 header('Content-Type: application/json');
+require_once dirname(__DIR__, 2) . '/includes/app.php';
 
 // Auth check
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+$portalAdmin = current_user();
+if (!$portalAdmin || $portalAdmin['role'] !== 'admin' || $portalAdmin['account_status'] !== 'active') {
     ob_clean();
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
+try { verify_csrf(); } catch (Throwable $e) { ob_clean(); echo json_encode(['success' => false, 'message' => $e->getMessage()]); exit; }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['import_file'])) {
     ob_clean();

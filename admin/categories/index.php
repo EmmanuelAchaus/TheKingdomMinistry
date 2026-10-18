@@ -70,10 +70,11 @@ function addCategory() {
                 return false;
             }
             const data = new FormData();
+            data.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
             data.append('action', 'create');
             data.append('name', name);
             
-            return fetch('/TheKingdomMinistry 2/admin/ajax/categories.ajax.php', { method: 'POST', body: data })
+            return fetch(<?php echo json_encode(app_url('admin/ajax/categories.ajax.php')); ?>, { method: 'POST', body: data })
                 .then(response => response.json())
                 .then(data => {
                     if(!data.success) throw new Error(data.message);
@@ -105,11 +106,12 @@ function editCategory(id) {
             if(!name || name === currentName) return false;
             
             const data = new FormData();
+            data.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
             data.append('action', 'update');
             data.append('id', id);
             data.append('name', name);
             
-            return fetch('/TheKingdomMinistry 2/admin/ajax/categories.ajax.php', { method: 'POST', body: data })
+            return fetch(<?php echo json_encode(app_url('admin/ajax/categories.ajax.php')); ?>, { method: 'POST', body: data })
                 .then(response => response.json())
                 .then(data => {
                     if(!data.success) throw new Error(data.message);
@@ -128,7 +130,7 @@ function editCategory(id) {
 }
 
 function deleteCategory(id) {
-    AdminApp.handleAjaxDelete('/TheKingdomMinistry 2/admin/ajax/categories.ajax.php', { action: 'delete', id: id }, function() {
+    AdminApp.handleAjaxDelete(<?php echo json_encode(app_url('admin/ajax/categories.ajax.php')); ?>, { action: 'delete', id: id }, function() {
         document.getElementById('row-' + id).remove();
     });
 }

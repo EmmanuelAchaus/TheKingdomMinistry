@@ -1,0 +1,1 @@
+</main></div><script>const mb=document.querySelector('.portal-menu-btn'),sb=document.getElementById('portal-sidebar');mb?.addEventListener('click',()=>{const o=sb.classList.toggle('open');mb.setAttribute('aria-expanded',o?'true':'false')});</script></body></html>

@@ -6,12 +6,13 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrf_token()); ?>">
     <title>Admin Dashboard - The Kingdom Ministry</title>
-    <link href="/TheKingdomMinistry 2/assets/css/tailwind.css" rel="stylesheet">
+    <link href="<?php echo htmlspecialchars(app_url('assets/css/tailwind.css')); ?>" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
-    <link href="/TheKingdomMinistry 2/assets/css/style.css" rel="stylesheet">
-    <link href="/TheKingdomMinistry 2/admin/assets/css/admin.css" rel="stylesheet">
+    <link href="<?php echo htmlspecialchars(app_url('assets/css/style.css')); ?>" rel="stylesheet">
+    <link href="<?php echo htmlspecialchars(app_url('admin/assets/css/admin.css')); ?>" rel="stylesheet">
 </head>
 <body class="bg-[#f0ece1] text-[#1b2b41] flex flex-col md:flex-row min-h-screen">
     <!-- Mobile Header -->

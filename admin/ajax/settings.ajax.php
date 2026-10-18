@@ -1,15 +1,21 @@
 <?php
-session_start();
 header('Content-Type: application/json');
-require_once '../includes/db.php';
+require_once dirname(__DIR__, 2) . '/includes/app.php';
 
 // Auth check
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+$portalAdmin = current_user();
+if (!$portalAdmin || $portalAdmin['role'] !== 'admin' || $portalAdmin['account_status'] !== 'active') {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    try {
+        verify_csrf();
+    } catch (Throwable $e) {
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        exit;
+    }
     
     if ($_POST['action'] === 'save_highlighted_scripture') {
         $verse = $_POST['highlighted_verse'] ?? '';
@@ -40,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
     
     if ($_POST['action'] === 'change_password') {
-        $admin_id = $_SESSION['admin_id'];
+        $admin_id = (int) $portalAdmin['id'];
         $current = $_POST['current_password'] ?? '';
         $new = $_POST['new_password'] ?? '';
         $confirm = $_POST['confirm_password'] ?? '';
@@ -55,25 +61,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
         
-        if (strlen($new) < 6) {
-            echo json_encode(['success' => false, 'message' => 'Password must be at least 6 characters long.']);
+        if (strlen($new) < 12) {
+            echo json_encode(['success' => false, 'message' => 'Password must be at least 12 characters long.']);
             exit;
         }
         
         try {
             // Verify current password
-            $stmt = $pdo->prepare("SELECT password FROM admins WHERE id = :id");
+            $stmt = $pdo->prepare("SELECT password_hash FROM users WHERE id = :id");
             $stmt->execute(['id' => $admin_id]);
             $admin = $stmt->fetch();
             
-            if (!$admin || !password_verify($current, $admin['password'])) {
+            if (!$admin || !password_verify($current, $admin['password_hash'])) {
                 echo json_encode(['success' => false, 'message' => 'Incorrect current password.']);
                 exit;
             }
             
             // Hash and update new password
             $hashed = password_hash($new, PASSWORD_DEFAULT);
-            $update = $pdo->prepare("UPDATE admins SET password = :password WHERE id = :id");
+            $update = $pdo->prepare("UPDATE users SET password_hash = :password, must_change_password = 0 WHERE id = :id");
             $update->execute(['password' => $hashed, 'id' => $admin_id]);
             
             echo json_encode(['success' => true, 'message' => 'Password updated successfully.']);

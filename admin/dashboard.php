@@ -52,6 +52,7 @@ while ($row = $settings_stmt->fetch()) {
     <div class="bg-white rounded-2xl shadow-sm border border-[#b89c5e]/20 p-6 flex flex-col">
         <h2 class="text-xl font-semibold mb-6 border-b border-[#b89c5e]/20 pb-4">Highlighted Scripture</h2>
         <form id="scriptureForm" class="space-y-4 flex-1">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save_highlighted_scripture">
             <div>
                 <label class="block text-xs font-medium mb-2 uppercase tracking-widest text-[#b89c5e]">Bible Verse (Quote)</label>
@@ -69,11 +70,11 @@ while ($row = $settings_stmt->fetch()) {
     <div class="bg-white rounded-2xl shadow-sm border border-[#b89c5e]/20 p-6">
         <h2 class="text-xl font-semibold mb-6 border-b border-[#b89c5e]/20 pb-4">Quick Links</h2>
         <div class="grid grid-cols-2 gap-4">
-            <a href="/TheKingdomMinistry 2/admin/articles/create.php" class="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-[#b89c5e]/40 hover:bg-[#b89c5e]/5 transition-colors group">
+            <a href="<?php echo htmlspecialchars(app_url('admin/articles/create.php')); ?>" class="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-[#b89c5e]/40 hover:bg-[#b89c5e]/5 transition-colors group">
                 <svg class="w-8 h-8 text-[#b89c5e] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 <span class="text-xs uppercase tracking-wider font-semibold group-hover:text-[#b89c5e]">New Article</span>
             </a>
-            <a href="/TheKingdomMinistry 2/admin/categories/index.php" class="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-[#b89c5e]/40 hover:bg-[#b89c5e]/5 transition-colors group">
+            <a href="<?php echo htmlspecialchars(app_url('admin/categories/')); ?>" class="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-[#b89c5e]/40 hover:bg-[#b89c5e]/5 transition-colors group">
                 <svg class="w-8 h-8 text-[#b89c5e] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                 <span class="text-xs uppercase tracking-wider font-semibold group-hover:text-[#b89c5e]">Categories</span>
             </a>
@@ -84,7 +85,7 @@ while ($row = $settings_stmt->fetch()) {
 <div class="bg-white rounded-2xl shadow-sm border border-[#b89c5e]/20 overflow-hidden">
     <div class="p-6 border-b border-[#b89c5e]/20 flex justify-between items-center">
         <h2 class="text-xl font-semibold">Recent Articles</h2>
-        <a href="/TheKingdomMinistry 2/admin/articles/index.php" class="text-sm text-[#b89c5e] hover:underline">View All</a>
+        <a href="<?php echo htmlspecialchars(app_url('admin/articles/')); ?>" class="text-sm text-[#b89c5e] hover:underline">View All</a>
     </div>
     
     <div class="overflow-x-auto">
@@ -131,7 +132,7 @@ document.getElementById('scriptureForm').addEventListener('submit', function(e) 
         didOpen: () => { Swal.showLoading(); }
     });
     
-    fetch('/TheKingdomMinistry 2/admin/ajax/settings.ajax.php', {
+    fetch(<?php echo json_encode(app_url('admin/ajax/settings.ajax.php')); ?>, {
         method: 'POST',
         body: formData
     })
