@@ -55,8 +55,8 @@ $paymentId = post_financial_payment([
 ], $adminId);
 $pdo->commit();
 $summary = contribution_summary($memberId);
-integration_expect($summary['paid'] === '1500.00', 'contribution is allocated oldest-first');
-integration_expect($summary['outstanding'] === '500.00', 'partial upcoming obligation remains outstanding');
+integration_expect($summary['paid'] === '1500.00', 'the full deposit stays on its own month as savings');
+integration_expect($summary['outstanding'] === '1000.00', 'next month keeps its own minimum with no roll-forward');
 
 $pdo->beginTransaction();
 reverse_financial_payment($paymentId, $adminId, 'Integration reversal');
@@ -67,13 +67,17 @@ integration_expect($summary['paid'] === '0.00', 'contribution reversal restores 
 $pdo->prepare(
     "INSERT INTO loans(member_id,loan_number,principal_amount,annual_interest_rate,interest_method,term_months,
       processing_fee,grace_days,late_penalty_rate,outstanding_principal,outstanding_interest,outstanding_fees,status,approved_by)
-     VALUES(?,'TEST-LN-001',1200.00,12.0000,'flat',12,50.00,3,5.0000,1200.00,144.00,50.00,'approved',?)"
+     VALUES(?,'TEST-LN-001',5000.00,10.0000,'fixed',6,0.00,0,0.0000,5000.00,500.00,0.00,'approved',?)"
 )->execute([$memberId, $adminId]);
 $loanId = (int) $pdo->lastInsertId();
 $pdo->beginTransaction();
 disburse_loan($loanId, date('Y-m-d'), 'M-Pesa', 'TEST-DISBURSE-001', $adminId);
 $pdo->commit();
-integration_expect((int) $pdo->query("SELECT COUNT(*) FROM loan_installments WHERE loan_id={$loanId}")->fetchColumn() === 12, 'disbursement creates the full schedule');
+integration_expect((int) $pdo->query("SELECT COUNT(*) FROM loan_installments WHERE loan_id={$loanId}")->fetchColumn() === 1, 'a fixed loan disburses as a single balloon installment');
+$installment = $pdo->query("SELECT interest_due,due_date FROM loan_installments WHERE loan_id={$loanId}")->fetch();
+integration_expect($installment['interest_due'] === '500.00', 'fixed interest is a flat 10% of principal');
+$expectedDue = due_date_for_month((new DateTimeImmutable(date('Y-m-d')))->modify('+6 month')->format('Y-m-01'), (int) (new DateTimeImmutable(date('Y-m-d')))->format('j'));
+integration_expect($installment['due_date'] === $expectedDue, 'the balloon falls due six months after disbursement');
 
 $before = (float) $pdo->query("SELECT outstanding_principal+outstanding_interest+outstanding_fees FROM loans WHERE id={$loanId}")->fetchColumn();
 $pdo->beginTransaction();

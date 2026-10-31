@@ -28,6 +28,14 @@ $odd = build_loan_schedule(10001, 0, 3, 'flat');
 expect(array_sum(array_column($odd['installments'], 'principal_cents')) === 10001, 'cent remainder is preserved');
 expect(count($odd['installments']) === 3, 'requested installment count is preserved');
 
+// SHG loans: a flat one-off 10% charge on the principal, independent of term.
+$fixed = build_loan_schedule(500000, SHG_LOAN_INTEREST_BP, 1, 'fixed');
+expect($fixed['interest_cents'] === 50000, 'fixed interest is a flat 10% of principal');
+expect($fixed['total_cents'] === 550000, 'fixed total is principal plus flat interest');
+expect(count($fixed['installments']) === 1, 'a single-installment fixed loan is one balloon');
+$fixedLong = build_loan_schedule(500000, SHG_LOAN_INTEREST_BP, 6, 'fixed');
+expect($fixedLong['interest_cents'] === 50000, 'fixed interest does not change with the term');
+
 $failed = false;
 try {
     build_loan_schedule(0, 1200, 12, 'flat');

@@ -55,52 +55,6 @@ function refresh_contribution_obligation(int $obligationId): void
     $update->execute([$status, $obligationId]);
 }
 
-function apply_contribution_credits(int $memberId): void
-{
-    global $pdo;
-    $credits = $pdo->prepare(
-        "SELECT ca.id, ca.payment_id, ca.amount
-         FROM contribution_allocations ca
-         JOIN financial_payments p ON p.id = ca.payment_id
-         WHERE p.member_id = ? AND p.status = 'posted'
-           AND ca.allocation_type = 'credit' AND ca.amount > 0
-         ORDER BY p.paid_on, ca.id"
-    );
-    $credits->execute([$memberId]);
-    $obligations = $pdo->prepare(
-        "SELECT id, expected_amount, paid_amount
-         FROM contribution_obligations
-         WHERE member_id = ? AND paid_amount < expected_amount
-         ORDER BY period_month, id FOR UPDATE"
-    );
-    $obligations->execute([$memberId]);
-    $open = $obligations->fetchAll();
-
-    foreach ($credits->fetchAll() as $credit) {
-        $remaining = money_to_cents($credit['amount']);
-        foreach ($open as &$obligation) {
-            $needed = money_to_cents($obligation['expected_amount']) - money_to_cents($obligation['paid_amount']);
-            if ($needed <= 0 || $remaining <= 0) {
-                continue;
-            }
-            $applied = min($needed, $remaining);
-            $insert = $pdo->prepare(
-                "INSERT INTO contribution_allocations (payment_id, obligation_id, amount, allocation_type)
-                 VALUES (?, ?, ?, 'obligation')"
-            );
-            $insert->execute([$credit['payment_id'], $obligation['id'], cents_to_decimal($applied)]);
-            $update = $pdo->prepare('UPDATE contribution_obligations SET paid_amount = paid_amount + ? WHERE id = ?');
-            $update->execute([cents_to_decimal($applied), $obligation['id']]);
-            $obligation['paid_amount'] = cents_to_decimal(money_to_cents($obligation['paid_amount']) + $applied);
-            $remaining -= $applied;
-            refresh_contribution_obligation((int) $obligation['id']);
-        }
-        unset($obligation);
-        $updateCredit = $pdo->prepare('UPDATE contribution_allocations SET amount = ? WHERE id = ?');
-        $updateCredit->execute([cents_to_decimal($remaining), $credit['id']]);
-    }
-}
-
 function sync_member_contributions(int $memberId, ?string $throughMonth = null): void
 {
     global $pdo;
@@ -138,7 +92,6 @@ function sync_member_contributions(int $memberId, ?string $throughMonth = null):
     foreach ($ids->fetchAll(PDO::FETCH_COLUMN) as $id) {
         refresh_contribution_obligation((int) $id);
     }
-    apply_contribution_credits($memberId);
 }
 
 function reprice_unpaid_contribution_obligations(int $memberId, string $fromMonth): void
@@ -171,20 +124,12 @@ function contribution_summary(int $memberId): array
     $stmt = $pdo->prepare(
         'SELECT COALESCE(SUM(expected_amount),0) expected,
                 COALESCE(SUM(paid_amount),0) paid,
-                COALESCE(SUM(expected_amount - paid_amount),0) outstanding,
+                COALESCE(SUM(GREATEST(expected_amount - paid_amount, 0)),0) outstanding,
                 SUM(status = \'overdue\') overdue_count
          FROM contribution_obligations WHERE member_id = ?'
     );
     $stmt->execute([$memberId]);
-    $summary = $stmt->fetch();
-    $credit = $pdo->prepare(
-        "SELECT COALESCE(SUM(ca.amount),0)
-         FROM contribution_allocations ca JOIN financial_payments p ON p.id = ca.payment_id
-         WHERE p.member_id = ? AND p.status = 'posted' AND ca.allocation_type = 'credit'"
-    );
-    $credit->execute([$memberId]);
-    $summary['credit'] = $credit->fetchColumn();
-    return $summary;
+    return $stmt->fetch();
 }
 
 function get_loan_product(): array
@@ -195,14 +140,9 @@ function get_loan_product(): array
 
 function loan_estimate(array $product, int $principalCents, int $termMonths): array
 {
-    $basisPoints = (int) round((float) $product['annual_interest_rate'] * 100);
-    return build_loan_schedule(
-        $principalCents,
-        $basisPoints,
-        $termMonths,
-        $product['interest_method'],
-        money_to_cents($product['processing_fee'])
-    );
+    // SHG loans carry a flat one-off 10% and repay as a single balloon, so the
+    // product rate/method/fee and the requested term do not affect the figure.
+    return build_loan_schedule($principalCents, SHG_LOAN_INTEREST_BP, 1, 'fixed', 0);
 }
 
 function loan_eligibility(int $memberId, array $product): array
@@ -228,7 +168,7 @@ function loan_eligibility(int $memberId, array $product): array
     }
     sync_member_contributions($memberId);
     $completion = $pdo->prepare(
-        'SELECT COALESCE(SUM(expected_amount),0) expected, COALESCE(SUM(paid_amount),0) paid
+        'SELECT COALESCE(SUM(expected_amount),0) expected, COALESCE(SUM(LEAST(paid_amount, expected_amount)),0) paid
          FROM contribution_obligations WHERE member_id=? AND due_date <= CURDATE()'
     );
     $completion->execute([$memberId]);
@@ -305,22 +245,35 @@ function disburse_loan(int $loanId, string $date, string $method, string $refere
     if (!$loan) {
         throw new RuntimeException('Only approved, undisbursed loans can be disbursed.');
     }
+    $interestMethod = (string) $loan['interest_method'];
+    $termMonths = (int) $loan['term_months'];
+    $disbursed = new DateTimeImmutable($date);
+    $maturity = due_date_for_month(
+        $disbursed->modify('+' . $termMonths . ' month')->format('Y-m-01'),
+        (int) $disbursed->format('j')
+    );
+    // SHG ('fixed') loans repay as one balloon due at maturity; legacy
+    // flat/reducing loans keep their month-by-month installment schedule.
+    $installmentCount = $interestMethod === 'fixed' ? 1 : $termMonths;
     $schedule = build_loan_schedule(
         money_to_cents($loan['principal_amount']),
         (int) round((float) $loan['annual_interest_rate'] * 100),
-        (int) $loan['term_months'],
-        $loan['interest_method'],
+        $installmentCount,
+        $interestMethod,
         money_to_cents($loan['processing_fee'])
     );
-    $disbursed = new DateTimeImmutable($date);
     $insert = $pdo->prepare(
         'INSERT INTO loan_installments
          (loan_id, installment_number, due_date, principal_due, interest_due, fee_due)
          VALUES (?, ?, ?, ?, ?, ?)'
     );
     foreach ($schedule['installments'] as $row) {
-        $target = $disbursed->modify('+' . $row['number'] . ' month');
-        $due = due_date_for_month($target->format('Y-m-01'), (int) $disbursed->format('j'));
+        $due = $interestMethod === 'fixed'
+            ? $maturity
+            : due_date_for_month(
+                $disbursed->modify('+' . $row['number'] . ' month')->format('Y-m-01'),
+                (int) $disbursed->format('j')
+            );
         $insert->execute([
             $loanId,
             $row['number'],
@@ -330,7 +283,6 @@ function disburse_loan(int $loanId, string $date, string $method, string $refere
             cents_to_decimal($row['fee_cents']),
         ]);
     }
-    $maturity = due_date_for_month($disbursed->modify('+' . $loan['term_months'] . ' month')->format('Y-m-01'), (int) $disbursed->format('j'));
     $update = $pdo->prepare(
         "UPDATE loans SET status='active', disbursed_on=?, disbursement_method=?, disbursement_reference=?,
          maturity_date=?, outstanding_interest=?, outstanding_fees=?, disbursed_by=? WHERE id=?"
@@ -387,35 +339,25 @@ function post_financial_payment(array $input, int $actorId): int
     $paymentId = (int) $pdo->lastInsertId();
 
     if ($type === 'contribution') {
-        sync_member_contributions($memberId);
-        $open = $pdo->prepare(
-            'SELECT * FROM contribution_obligations
-             WHERE member_id = ? AND paid_amount < expected_amount
-             ORDER BY period_month, id FOR UPDATE'
+        $period = month_start($input['paid_on']);
+        sync_member_contributions($memberId, $period);
+        $lookup = $pdo->prepare(
+            'SELECT id FROM contribution_obligations WHERE member_id = ? AND period_month = ? FOR UPDATE'
         );
-        $open->execute([$memberId]);
-        $remaining = $amountCents;
-        foreach ($open->fetchAll() as $obligation) {
-            if ($remaining <= 0) {
-                break;
-            }
-            $needed = money_to_cents($obligation['expected_amount']) - money_to_cents($obligation['paid_amount']);
-            $applied = min($needed, $remaining);
-            $pdo->prepare(
-                "INSERT INTO contribution_allocations (payment_id, obligation_id, amount, allocation_type)
-                 VALUES (?, ?, ?, 'obligation')"
-            )->execute([$paymentId, $obligation['id'], cents_to_decimal($applied)]);
-            $pdo->prepare('UPDATE contribution_obligations SET paid_amount=paid_amount+? WHERE id=?')
-                ->execute([cents_to_decimal($applied), $obligation['id']]);
-            refresh_contribution_obligation((int) $obligation['id']);
-            $remaining -= $applied;
+        $lookup->execute([$memberId, $period]);
+        $obligationId = (int) $lookup->fetchColumn();
+        if (!$obligationId) {
+            throw new RuntimeException('No contribution period exists for the selected payment date.');
         }
-        if ($remaining > 0) {
-            $pdo->prepare(
-                "INSERT INTO contribution_allocations (payment_id, obligation_id, amount, allocation_type)
-                 VALUES (?, NULL, ?, 'credit')"
-            )->execute([$paymentId, cents_to_decimal($remaining)]);
-        }
+        // The whole deposit stays on its own month; any surplus over the 300
+        // minimum is that month's extra savings and never pre-pays later months.
+        $pdo->prepare(
+            "INSERT INTO contribution_allocations (payment_id, obligation_id, amount, allocation_type)
+             VALUES (?, ?, ?, 'obligation')"
+        )->execute([$paymentId, $obligationId, cents_to_decimal($amountCents)]);
+        $pdo->prepare('UPDATE contribution_obligations SET paid_amount=paid_amount+? WHERE id=?')
+            ->execute([cents_to_decimal($amountCents), $obligationId]);
+        refresh_contribution_obligation($obligationId);
     } else {
         if (!$loanId) {
             throw new InvalidArgumentException('Select the loan being repaid.');

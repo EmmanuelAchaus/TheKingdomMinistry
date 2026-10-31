@@ -187,12 +187,9 @@ try {
             throw new RuntimeException('Loan applications are not currently open.');
         }
         $amount = money_to_cents((string) ($_POST['amount'] ?? ''));
-        $term = (int) ($_POST['term_months'] ?? 0);
-        if ($amount < money_to_cents($product['minimum_amount']) || $amount > money_to_cents($product['maximum_amount'])) {
+        $term = SHG_LOAN_TERM_MONTHS; // every loan is repayable within six months
+        if ($amount < money_to_cents($product['minimum_amount']) || $amount > money_to_cents($product['maximum_amount']) || $amount > SHG_LOAN_MAX_AMOUNT_CENTS) {
             throw new InvalidArgumentException('Requested amount is outside the permitted loan range.');
-        }
-        if ($term < (int) $product['minimum_term_months'] || $term > (int) $product['maximum_term_months']) {
-            throw new InvalidArgumentException('Requested repayment period is outside the permitted range.');
         }
         $problems = loan_eligibility($memberId, $product);
         if ($problems) {

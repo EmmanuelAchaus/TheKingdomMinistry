@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+// Kingdom Sons SHG rules. Loans carry a flat one-off 10% charge on the
+// principal (not monthly, not annual, not compounded) and fall due as a single
+// balloon within six months. Monthly savings have a 300 minimum.
+const SHG_LOAN_INTEREST_BP = 1000;          // flat 10% of principal, applied once
+const SHG_LOAN_TERM_MONTHS = 6;             // single repayment deadline, in months
+const SHG_LOAN_MAX_AMOUNT_CENTS = 2000000;  // KES 20,000.00 ceiling
+const SHG_CONTRIB_MIN_CENTS = 30000;        // KES 300.00 monthly minimum
+
 function divide_cents(int $amount, int $parts): array
 {
     if ($parts < 1) {
@@ -38,14 +46,18 @@ function build_loan_schedule(
     if ($principalCents <= 0 || $termMonths < 1 || $annualRateBasisPoints < 0 || $processingFeeCents < 0) {
         throw new InvalidArgumentException('Invalid loan terms.');
     }
-    if (!in_array($method, ['flat', 'reducing'], true)) {
-        throw new InvalidArgumentException('Interest method must be flat or reducing.');
+    if (!in_array($method, ['flat', 'reducing', 'fixed'], true)) {
+        throw new InvalidArgumentException('Interest method must be flat, reducing, or fixed.');
     }
 
     $principalParts = divide_cents($principalCents, $termMonths);
     $interestParts = [];
 
-    if ($method === 'flat') {
+    if ($method === 'fixed') {
+        // One-off charge: interest = principal × rate, independent of the term.
+        $totalInterest = rounded_division($principalCents * $annualRateBasisPoints, 10000);
+        $interestParts = divide_cents($totalInterest, $termMonths);
+    } elseif ($method === 'flat') {
         $totalInterest = rounded_division(
             $principalCents * $annualRateBasisPoints * $termMonths,
             10000 * 12
